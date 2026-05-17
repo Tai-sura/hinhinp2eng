@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>English Vocab Explorer 英語單字探險家</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Fredoka', 'Comic Sans MS', cursive, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: linear-gradient(135deg, #fff9e6 0%, #e8f4fd 50%, #fde8f0 100%); min-height: 100dvh; }
+    .screen { display: none; animation: fadeIn 0.35s ease; }
+    .screen.active { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    @keyframes pop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+    @keyframes celebrate { 0% { transform: scale(1) rotate(0); } 50% { transform: scale(1.2) rotate(5deg); } 100% { transform: scale(1) rotate(0); } }
+    .card-scene { perspective: 1200px; width: min(92vw, 380px); height: min(58vw, 280px); }
+    .flashcard {
+      width: 100%; height: 100%; position: relative;
+      transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
+      cursor: pointer;
+    }
+    .flashcard.flipped { transform: rotateY(180deg); }
+    .card-face {
+      position: absolute; inset: 0; backface-visibility: hidden;
+      border-radius: 24px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+    }
+    .card-front { background: linear-gradient(145deg, #fff 0%, #f0f7ff 100%); border: 4px solid #93c5fd; }
+    .card-back {
+      background: linear-gradient(145deg, #fef3c7 0%, #fde68a 100%);
+      border: 4px solid #fbbf24; transform: rotateY(180deg);
+    }
+    .btn-kid {
+      transition: all 0.15s ease; touch-action: manipulation;
+      user-select: none; -webkit-user-select: none;
+    }
+    .btn-kid:active { transform: scale(0.94); }
+    .letter-btn { min-width: 44px; min-height: 48px; }
+    .drag-item { cursor: grab; touch-action: none; }
+    .drag-item:active { cursor: grabbing; }
+    .drop-zone.drag-over { background: #bbf7d0 !important; border-color: #22c55e !important; transform: scale(1.03); }
+    .drop-zone.correct { background: #dcfce7 !important; border-color: #16a34a !important; }
+    .progress-dot { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; transition: all 0.3s; }
+    .progress-dot.done { background: #22c55e; }
+    .progress-dot.current { background: #3b82f6; transform: scale(1.4); }
+    .star-pop { animation: celebrate 0.5s ease; }
+    .shake { animation: shake 0.4s ease; }
+  </style>
+</head>
+<body class="overflow-x-hidden">
+
+<!-- HOME -->
+<div id="screen-home" class="screen active flex-col items-center justify-center min-h-dvh p-4 gap-5">
+  <div class="text-center">
+    <div class="text-6xl mb-2 animate-bounce">🧭</div>
+    <h1 class="text-3xl md:text-4xl font-bold text-indigo-700 leading-tight">English Vocab Explorer</h1>
+    <p class="text-lg text-indigo-500 mt-1">英語單字探險家 · P2</p>
+    <p class="text-sm text-gray-500 mt-2">Tap a deck, then pick how you want to play!</p>
+  </div>
+
+  <div class="w-full max-w-md space-y-3">
+    <p class="text-center text-sm font-semibold text-gray-600">📚 Choose a deck</p>
+    <button onclick="selectDeck('occupations1')" class="btn-kid w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-sky-400 to-blue-500 text-white text-lg font-bold shadow-lg flex items-center gap-3">
+      <span class="text-3xl">🧑‍⚕️</span>
+      <div class="text-left"><div class="block">People Who Help Us</div><span class="text-sm font-normal opacity-90">Level 1 · 基礎職業 (21)</span></div>
+    </button>
+    <button onclick="selectDeck('occupations2')" class="btn-kid w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-violet-400 to-purple-500 text-white text-lg font-bold shadow-lg flex items-center gap-3">
+      <span class="text-3xl">🚀</span>
+      <div class="text-left"><span class="block">More Occupations</span><span class="text-sm font-normal opacity-90 block">Level 2 · 進階職業 (23)</span></div>
+    </button>
+    <button onclick="selectDeck('shopping')" class="btn-kid w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-400 to-teal-500 text-white text-lg font-bold shadow-lg flex items-center gap-3">
+      <span class="text-3xl">🛒</span>
+      <div class="text-left"><div class="block">Shopping with Mom</div><span class="text-sm font-normal opacity-90">量詞與食物 (18)</span></div>
+    </button>
+  </div>
+
+  <div class="w-full max-w-md space-y-2 mt-2">
+    <p class="text-center text-sm font-semibold text-gray-600">🎮 Quick play (all decks)</p>
+    <div class="grid grid-cols-2 gap-2">
+      <button onclick="startMatchGame()" class="btn-kid py-3 rounded-xl bg-orange-400 text-white font-bold shadow">
+        <i class="fa-solid fa-link mr-1"></i> Match-up
+      </button>
+      <button onclick="startSpellingAll()" class="btn-kid py-3 rounded-xl bg-pink-400 text-white font-bold shadow">
+        <i class="fa-solid fa-spell-check mr-1"></i> Spelling
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- DECK MENU -->
+<div id="screen-deck" class="screen flex-col items-center min-h-dvh p-4 pt-6 gap-4">
+  <h2 id="deck-title" class="text-2xl font-bold text-indigo-700 text-center"></h2>
+  <p id="deck-count" class="text-gray-500 text-sm"></p>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg">
+    <button onclick="startFlashcards()" class="btn-kid py-5 rounded-2xl bg-yellow-300 text-yellow-900 font-bold shadow-lg flex flex-col items-center gap-2">
+      <span class="text-4xl">🃏</span> Flashcards
+    </button>
+    <button onclick="startSpelling()" class="btn-kid py-5 rounded-2xl bg-pink-300 text-pink-900 font-bold shadow-lg flex flex-col items-center gap-2">
+      <span class="text-4xl">✏️</span> Spelling Quiz
+    </button>
+    <button id="btn-match-deck" onclick="startMatchFromDeck()" class="btn-kid py-5 rounded-2xl bg-orange-300 text-orange-900 font-bold shadow-lg flex flex-col items-center gap-2">
+      <span class="text-4xl">🎯</span> Match-up
+    </button>
+  </div>
+  <button onclick="goHome()" class="btn-kid mt-4 text-indigo-600 font-semibold"><i class="fa-solid fa-house"></i> Home</button>
+</div>
+
+<!-- FLASHCARDS -->
+<div id="screen-flash" class="screen flex-col items-center min-h-dvh p-4 pt-4 gap-3">
+  <div class="flex items-center justify-between w-full max-w-md">
+    <button onclick="goDeckMenu()" class="btn-kid text-indigo-600 font-semibold text-sm"><i class="fa-solid fa-arrow-left"></i> Back</button>
+    <span id="flash-counter" class="text-sm font-semibold text-gray-600 bg-white/70 px-3 py-1 rounded-full"></span>
+    <button onclick="shuffleDeck()" class="btn-kid text-indigo-600 text-sm" title="Shuffle"><i class="fa-solid fa-shuffle"></i></button>
+  </div>
+  <p class="text-xs text-gray-500">Tap card to flip · Tap 🔊 to listen</p>
+  <div class="card-scene mt-2">
+    <div class="flashcard" id="flashcard" onclick="flipCard(event)">
+      <div class="card-face card-front">
+        <span id="fc-icon" class="text-8xl md:text-9xl select-none"></span>
+        <p class="text-gray-400 text-sm mt-3">Tap to see the word</p>
+      </div>
+      <div class="card-face card-back px-4">
+        <p id="fc-word" class="text-2xl md:text-3xl font-bold text-amber-900 text-center leading-snug"></p>
+        <button onclick="speakWord(event)" class="btn-kid mt-4 px-5 py-2 bg-amber-500 text-white rounded-full font-bold shadow flex items-center gap-2">
+          <i class="fa-solid fa-volume-high"></i> Listen
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="flash-dots" class="flex flex-wrap justify-center gap-1 max-w-xs mt-1"></div>
+  <div class="flex gap-4 mt-2">
+    <button onclick="prevCard()" class="btn-kid px-6 py-3 bg-indigo-200 text-indigo-800 rounded-xl font-bold shadow"><i class="fa-solid fa-chevron-left"></i> Prev</button>
+    <button onclick="nextCard()" class="btn-kid px-6 py-3 bg-indigo-500 text-white rounded-xl font-bold shadow">Next <i class="fa-solid fa-chevron-right"></i></button>
+  </div>
+</div>
+
+<!-- SPELLING -->
+<div id="screen-spell" class="screen flex-col items-center min-h-dvh p-4 pt-4 gap-3">
+  <div class="flex items-center justify-between w-full max-w-md">
+    <button onclick="goDeckMenu()" class="btn-kid text-indigo-600 font-semibold text-sm"><i class="fa-solid fa-arrow-left"></i> Back</button>
+    <span id="spell-score" class="text-sm font-bold text-emerald-600 bg-white/80 px-3 py-1 rounded-full">⭐ 0</span>
+    <span id="spell-counter" class="text-sm text-gray-600"></span>
+  </div>
+  <div class="bg-white rounded-3xl shadow-lg p-6 w-full max-w-md text-center border-4 border-pink-200">
+    <span id="spell-icon" class="text-7xl block mb-2"></span>
+    <p class="text-gray-500 text-sm mb-2">Spell the word:</p>
+    <div id="spell-answer" class="min-h-[52px] flex flex-wrap justify-center gap-1 text-2xl font-bold text-indigo-800 mb-3"></div>
+    <div id="spell-letters" class="flex flex-wrap justify-center gap-2"></div>
+  </div>
+  <button onclick="clearSpell()" class="btn-kid text-gray-500 text-sm"><i class="fa-solid fa-rotate-left"></i> Clear</button>
+  <button onclick="hintSpell()" class="btn-kid px-4 py-2 bg-amber-200 text-amber-800 rounded-xl font-bold text-sm">💡 Hint</button>
+</div>
+
+<!-- MATCH-UP -->
+<div id="screen-match" class="screen flex-col items-center min-h-dvh p-4 pt-3 gap-2">
+  <div class="flex items-center justify-between w-full max-w-lg">
+    <button onclick="goHome()" class="btn-kid text-indigo-600 font-semibold text-sm"><i class="fa-solid fa-house"></i></button>
+    <h2 class="text-lg font-bold text-teal-700">Quantifier Match-up</h2>
+    <span id="match-score" class="text-sm font-bold text-emerald-600">0/0</span>
+  </div>
+  <p class="text-xs text-gray-500 text-center px-2">Drag the quantifier to the correct food · 把量詞拖到正確的食物上</p>
+  <div id="match-quantifiers" class="flex flex-wrap justify-center gap-2 w-full max-w-lg min-h-[60px] p-2 bg-white/60 rounded-2xl"></div>
+  <div id="match-foods" class="grid grid-cols-2 gap-2 w-full max-w-lg flex-1 overflow-y-auto pb-4"></div>
+  <button id="match-next-btn" onclick="nextMatchRound()" class="btn-kid hidden px-6 py-3 bg-teal-500 text-white rounded-xl font-bold shadow-lg">Next Round ➡️</button>
+</div>
+
+<!-- CELEBRATION OVERLAY -->
+<div id="overlay-win" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-3xl p-8 text-center shadow-2xl max-w-sm star-pop">
+    <p class="text-6xl mb-3">🎉</p>
+    <h3 id="win-title" class="text-2xl font-bold text-indigo-700">Great job!</h3>
+    <p id="win-msg" class="text-gray-600 mt-2"></p>
+    <button onclick="closeOverlay()" class="btn-kid mt-5 px-8 py-3 bg-indigo-500 text-white rounded-xl font-bold">Continue</button>
+  </div>
+</div>
+
+<script>
+const vocabData = {
+  occupations1: [
+    { word: "a teacher", icon: "👩‍🏫" },
+    { word: "a doctor", icon: "👨‍⚕️" },
+    { word: "a nurse", icon: "👩‍⚕️" },
+    { word: "a policeman", icon: "👮‍♂️" },
+    { word: "a policewoman", icon: "👮‍♀️" },
+    { word: "a police officer", icon: "👮" },
+    { word: "a fireman", icon: "👨‍🚒" },
+    { word: "a firewoman", icon: "👩‍🚒" },
+    { word: "a firefighter", icon: "🧑‍🚒" },
+    { word: "a shopkeeper", icon: "🏪" },
+    { word: "a cook", icon: "👨‍🍳" },
+    { word: "a chef", icon: "🧑‍🍳" },
+    { word: "a driver", icon: "🚕" },
+    { word: "a designer", icon: "🎨" },
+    { word: "a dentist", icon: "🦷" },
+    { word: "a worker", icon: "👷" },
+    { word: "a waiter", icon: "🤵" },
+    { word: "a waitress", icon: "👩‍🍳" },
+    { word: "a greengrocer", icon: "🥦" },
+    { word: "a salesperson", icon: "🛍️" },
+    { word: "a professional athlete", icon: "🏐" }
+  ],
+  occupations2: [
+    { word: "an accountant", icon: "📊" },
+    { word: "a farmer", icon: "👨‍🌾" },
+    { word: "an actor", icon: "🎬" },
+    { word: "an actress", icon: "🎭" },
+    { word: "a pilot", icon: "✈️" },
+    { word: "an astronaut", icon: "🧑‍🚀" },
+    { word: "an artist", icon: "🖌️" },
+    { word: "a painter", icon: "🎨" },
+    { word: "a journalist", icon: "📹" },
+    { word: "an electrician", icon: "⚡" },
+    { word: "a youtuber", icon: "📱" },
+    { word: "a bank teller", icon: "🏦" },
+    { word: "an insurance agent", icon: "📋" },
+    { word: "a social worker", icon: "🤝" },
+    { word: "a fitness trainer", icon: "🏋️" },
+    { word: "a photographer", icon: "📷" },
+    { word: "an IT support specialist", icon: "💻" },
+    { word: "a real estate agent", icon: "🏠" },
+    { word: "a CEO", icon: "👔" },
+    { word: "a model", icon: "💃" },
+    { word: "a butcher", icon: "🥩" },
+    { word: "a fishmonger", icon: "🐟" },
+    { word: "a lawyer", icon: "⚖️" }
+  ],
+  shopping: [
+    { word: "a box of strawberries", icon: "🍓", quantifier: "a box of", food: "strawberries" },
+    { word: "a box of chocolates", icon: "🍫", quantifier: "a box of", food: "chocolates" },
+    { word: "a bottle of water", icon: "💧", quantifier: "a bottle of", food: "water" },
+    { word: "a bottle of soft drink", icon: "🥤", quantifier: "a bottle of", food: "soft drink" },
+    { word: "a carton of juice", icon: "🧃", quantifier: "a carton of", food: "juice" },
+    { word: "a carton of milk", icon: "🥛", quantifier: "a carton of", food: "milk" },
+    { word: "a can of sausages", icon: "🥫", quantifier: "a can of", food: "sausages" },
+    { word: "a can of pineapple slices", icon: "🍍", quantifier: "a can of", food: "pineapple slices" },
+    { word: "a packet of potato chips", icon: "🥔", quantifier: "a packet of", food: "potato chips" },
+    { word: "a packet of cookies", icon: "🍪", quantifier: "a packet of", food: "cookies" },
+    { word: "a bag of apples", icon: "🍎", quantifier: "a bag of", food: "apples" },
+    { word: "a bag of popcorn", icon: "🍿", quantifier: "a bag of", food: "popcorn" },
+    { word: "a jar of jam", icon: "🍯", quantifier: "a jar of", food: "jam" },
+    { word: "a bowl of rice", icon: "🍚", quantifier: "a bowl of", food: "rice" },
+    { word: "a tub of ice cream", icon: "🍨", quantifier: "a tub of", food: "ice cream" },
+    { word: "a loaf of bread", icon: "🍞", quantifier: "a loaf of", food: "bread" },
+    { word: "a slice of pizza", icon: "🍕", quantifier: "a slice of", food: "pizza" },
+    { word: "a head of cabbage", icon: "🥬", quantifier: "a head of", food: "cabbage" }
+  ]
+};
+
+const deckLabels = {
+  occupations1: "🧑‍⚕️ People Who Help Us · Level 1",
+  occupations2: "🚀 More Occupations · Level 2",
+  shopping: "🛒 Shopping with Mom"
+};
+
+let currentDeck = null;
+let deckItems = [];
+let cardIndex = 0;
+let spellIndex = 0;
+let spellScore = 0;
+let spellAnswer = [];
+let matchRound = [];
+let matchMatched = 0;
+let draggedQuantifier = null;
+let touchClone = null;
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goHome() {
+  currentDeck = null;
+  showScreen('screen-home');
+}
+
+function selectDeck(deck) {
+  currentDeck = deck;
+  document.getElementById('deck-title').textContent = deckLabels[deck];
+  document.getElementById('deck-count').textContent = vocabData[deck].length + ' words';
+  const matchBtn = document.getElementById('btn-match-deck');
+  matchBtn.style.display = deck === 'shopping' ? 'flex' : 'none';
+  showScreen('screen-deck');
+}
+
+function goDeckMenu() {
+  showScreen('screen-deck');
+}
+
+function getDeckItems() {
+  return [...vocabData[currentDeck]];
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ─── FLASHCARDS ───
+function startFlashcards() {
+  deckItems = shuffle(getDeckItems());
+  cardIndex = 0;
+  showScreen('screen-flash');
+  renderCard();
+}
+
+function shuffleDeck() {
+  deckItems = shuffle(deckItems);
+  cardIndex = 0;
+  renderCard();
+}
+
+function renderCard() {
+  const item = deckItems[cardIndex];
+  document.getElementById('fc-icon').textContent = item.icon;
+  document.getElementById('fc-word').textContent = item.word;
+  document.getElementById('flash-counter').textContent = `${cardIndex + 1} / ${deckItems.length}`;
+  document.getElementById('flashcard').classList.remove('flipped');
+
+  const dots = document.getElementById('flash-dots');
+  dots.innerHTML = deckItems.map((_, i) => {
+    let cls = 'progress-dot';
+    if (i < cardIndex) cls += ' done';
+    if (i === cardIndex) cls += ' current';
+    return `<span class="${cls}"></span>`;
+  }).join('');
+}
+
+function flipCard(e) {
+  if (e.target.closest('button')) return;
+  document.getElementById('flashcard').classList.toggle('flipped');
+}
+
+function prevCard() {
+  cardIndex = (cardIndex - 1 + deckItems.length) % deckItems.length;
+  renderCard();
+}
+
+function nextCard() {
+  cardIndex = (cardIndex + 1) % deckItems.length;
+  renderCard();
+}
+
+function speakWord(e) {
+  e.stopPropagation();
+  const text = deckItems[cardIndex].word;
+  speak(text);
+}
+
+function speak(text) {
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-GB';
+  u.rate = 0.85;
+  const voices = speechSynthesis.getVoices();
+  const en = voices.find(v => v.lang.startsWith('en')) || voices[0];
+  if (en) u.voice = en;
+  speechSynthesis.speak(u);
+}
+
+if ('speechSynthesis' in window) {
+  speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+}
+
+// ─── SPELLING QUIZ ───
+function startSpelling() {
+  deckItems = shuffle(getDeckItems());
+  spellIndex = 0;
+  spellScore = 0;
+  showScreen('screen-spell');
+  loadSpellQuestion();
+}
+
+function startSpellingAll() {
+  currentDeck = 'shopping';
+  deckItems = shuffle([
+    ...vocabData.occupations1,
+    ...vocabData.occupations2,
+    ...vocabData.shopping
+  ]);
+  spellIndex = 0;
+  spellScore = 0;
+  showScreen('screen-spell');
+  loadSpellQuestion();
+}
+
+function spellTarget(item) {
+  if (item.food) return item.food;
+  return item.word.replace(/^(a|an) /, '');
+}
+
+function spellHintPrefix(item) {
+  if (item.quantifier) return item.quantifier + ' ';
+  const m = item.word.match(/^(a|an)\s/);
+  return m ? m[0] : '';
+}
+
+function loadSpellQuestion() {
+  if (spellIndex >= deckItems.length) {
+    showWin(`You scored ${spellScore} / ${deckItems.length}!`, 'Spelling complete!');
+    goDeckMenu();
+    return;
+  }
+  const item = deckItems[spellIndex];
+  document.getElementById('spell-icon').textContent = item.icon;
+  document.getElementById('spell-counter').textContent = `${spellIndex + 1}/${deckItems.length}`;
+  document.getElementById('spell-score').textContent = `⭐ ${spellScore}`;
+
+  const target = spellTarget(item);
+  const prefix = spellHintPrefix(item);
+  spellAnswer = [];
+
+  const letters = target.replace(/\s+/g, '').split('');
+  const extraCount = Math.min(5, Math.max(3, Math.floor(letters.length / 3)));
+  const extras = 'abcdefghijklmnopqrstuvwxyz'.split('').filter(c => !letters.includes(c))
+    .sort(() => Math.random() - 0.5).slice(0, extraCount);
+  const pool = shuffle([...letters, ...extras]);
+
+  document.getElementById('spell-answer').innerHTML = prefix
+    ? `<span class="text-amber-600 text-xl">${prefix}</span><span id="spell-built" class="text-2xl"></span>`
+    : '<span id="spell-built" class="text-2xl"></span>';
+
+  document.getElementById('spell-letters').innerHTML = pool.map((ch, i) =>
+    `<button class="letter-btn btn-kid px-3 py-2 bg-indigo-100 text-indigo-800 rounded-xl font-bold text-lg shadow" data-ch="${ch}" data-idx="${i}" onclick="pickLetter(this,'${ch}')">${ch}</button>`
+  ).join('');
+}
+
+function pickLetter(btn, ch) {
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.classList.add('opacity-40');
+  spellAnswer.push(ch);
+  updateSpellDisplay();
+
+  const item = deckItems[spellIndex];
+  const target = spellTarget(item).replace(/\s/g, '');
+  const built = spellAnswer.join('');
+
+  if (built.replace(/\s/g, '').length >= target.replace(/\s/g, '').length) {
+    checkSpell();
+  }
+}
+
+function updateSpellDisplay() {
+  const built = spellAnswer.join('');
+  const el = document.getElementById('spell-built');
+  if (el) {
+    const item = deckItems[spellIndex];
+    const target = spellTarget(item);
+    let display = '';
+    let bi = 0;
+    for (const c of target) {
+      if (c === ' ') display += ' ';
+      else { display += built[bi] || '_'; bi++; }
+    }
+    el.textContent = display;
+  }
+}
+
+function checkSpell() {
+  const item = deckItems[spellIndex];
+  const target = spellTarget(item).replace(/\s/g, '');
+  const attempt = spellAnswer.join('').replace(/\s/g, '');
+
+  if (attempt === target) {
+    spellScore++;
+    speak(item.word);
+    document.getElementById('spell-score').textContent = `⭐ ${spellScore}`;
+    setTimeout(() => { spellIndex++; loadSpellQuestion(); }, 800);
+  } else {
+    document.querySelector('#screen-spell .bg-white').classList.add('shake');
+    setTimeout(() => document.querySelector('#screen-spell .bg-white').classList.remove('shake'), 400);
+    setTimeout(() => { spellIndex++; loadSpellQuestion(); }, 1200);
+  }
+}
+
+function clearSpell() {
+  spellAnswer = [];
+  document.querySelectorAll('#spell-letters button').forEach(b => {
+    b.disabled = false;
+    b.classList.remove('opacity-40');
+  });
+  updateSpellDisplay();
+}
+
+function hintSpell() {
+  const item = deckItems[spellIndex];
+  speak(item.word);
+}
+
+// ─── MATCH-UP ───
+function startMatchFromDeck() {
+  if (currentDeck !== 'shopping') return;
+  startMatchGame();
+}
+
+function startMatchGame() {
+  matchMatched = 0;
+  const items = shuffle([...vocabData.shopping]);
+  matchRound = items.slice(0, 6);
+  showScreen('screen-match');
+  renderMatchRound();
+}
+
+function renderMatchRound() {
+  document.getElementById('match-score').textContent = `${matchMatched}/${matchRound.length}`;
+  document.getElementById('match-next-btn').classList.add('hidden');
+
+  const quants = shuffle([...new Set(matchRound.map(i => i.quantifier))]);
+  const qEl = document.getElementById('match-quantifiers');
+  qEl.innerHTML = quants.map(q =>
+    `<div class="drag-item px-3 py-2 bg-amber-200 text-amber-900 rounded-xl font-bold text-sm shadow border-2 border-amber-400" draggable="true" data-q="${q}">${q}</div>`
+  ).join('');
+
+  const foods = shuffle(matchRound);
+  const fEl = document.getElementById('match-foods');
+  fEl.innerHTML = foods.map(item =>
+    `<div class="drop-zone flex flex-col items-center p-3 bg-white rounded-2xl border-3 border-dashed border-gray-300 min-h-[100px] transition-all" data-food="${item.food}" data-q="${item.quantifier}">
+      <span class="text-4xl">${item.icon}</span>
+      <span class="font-bold text-gray-700 mt-1 text-center text-sm">${item.food}</span>
+    </div>`
+  ).join('');
+
+  setupDragDrop();
+}
+
+function setupDragDrop() {
+  document.querySelectorAll('.drag-item').forEach(el => {
+    el.addEventListener('dragstart', e => {
+      draggedQuantifier = el.dataset.q;
+      e.dataTransfer.setData('text/plain', el.dataset.q);
+      el.style.opacity = '0.5';
+    });
+    el.addEventListener('dragend', () => { el.style.opacity = '1'; });
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: false });
+  });
+
+  document.querySelectorAll('.drop-zone').forEach(zone => {
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      tryMatch(zone, e.dataTransfer.getData('text/plain') || draggedQuantifier);
+    });
+  });
+}
+
+function handleTouchStart(e) {
+  e.preventDefault();
+  const el = e.currentTarget;
+  draggedQuantifier = el.dataset.q;
+  const touch = e.touches[0];
+  touchClone = el.cloneNode(true);
+  touchClone.style.cssText = `position:fixed;left:${touch.clientX - 40}px;top:${touch.clientY - 20}px;z-index:9999;pointer-events:none;opacity:0.9;`;
+  document.body.appendChild(touchClone);
+
+  const move = ev => {
+    const t = ev.touches[0];
+    touchClone.style.left = (t.clientX - 40) + 'px';
+    touchClone.style.top = (t.clientY - 20) + 'px';
+    document.querySelectorAll('.drop-zone').forEach(z => {
+      const r = z.getBoundingClientRect();
+      if (t.clientX >= r.left && t.clientX <= r.right && t.clientY >= r.top && t.clientY <= r.bottom)
+        z.classList.add('drag-over');
+      else z.classList.remove('drag-over');
+    });
+  };
+
+  const end = ev => {
+    const t = ev.changedTouches[0];
+    document.querySelectorAll('.drop-zone').forEach(z => {
+      z.classList.remove('drag-over');
+      const r = z.getBoundingClientRect();
+      if (t.clientX >= r.left && t.clientX <= r.right && t.clientY >= r.top && t.clientY <= r.bottom)
+        tryMatch(z, draggedQuantifier);
+    });
+    touchClone?.remove();
+    touchClone = null;
+    document.removeEventListener('touchmove', move);
+    document.removeEventListener('touchend', end);
+  };
+
+  document.addEventListener('touchmove', move, { passive: false });
+  document.addEventListener('touchend', end);
+}
+
+function tryMatch(zone, quant) {
+  if (zone.classList.contains('correct')) return;
+  if (zone.dataset.q === quant) {
+    zone.classList.add('correct');
+    zone.innerHTML = `<span class="text-2xl">✅</span><p class="font-bold text-green-700 text-sm mt-1">${quant}</p><p class="text-gray-600 text-xs">${zone.dataset.food}</p>`;
+    matchMatched++;
+    document.getElementById('match-score').textContent = `${matchMatched}/${matchRound.length}`;
+    speak(`${quant} ${zone.dataset.food}`);
+
+    document.querySelectorAll('.drag-item').forEach(d => {
+      if (d.dataset.q === quant) d.style.visibility = 'hidden';
+    });
+
+    if (matchMatched === matchRound.length) {
+      document.getElementById('match-next-btn').classList.remove('hidden');
+      showWin('All matched!', 'Quantifier Match-up');
+    }
+  } else {
+    zone.classList.add('shake');
+    setTimeout(() => zone.classList.remove('shake'), 400);
+  }
+}
+
+function nextMatchRound() {
+  const remaining = vocabData.shopping.filter(i => !matchRound.includes(i));
+  if (remaining.length < 3) {
+    showWin('You finished all shopping words!', 'Match-up Complete');
+    goHome();
+    return;
+  }
+  matchRound = shuffle(remaining).slice(0, 6);
+  matchMatched = 0;
+  renderMatchRound();
+}
+
+function showWin(msg, title) {
+  document.getElementById('win-title').textContent = title || 'Great job!';
+  document.getElementById('win-msg').textContent = msg;
+  document.getElementById('overlay-win').classList.remove('hidden');
+  document.getElementById('overlay-win').classList.add('flex');
+}
+
+function closeOverlay() {
+  document.getElementById('overlay-win').classList.add('hidden');
+  document.getElementById('overlay-win').classList.remove('flex');
+}
+</script>
+</body>
+</html>
