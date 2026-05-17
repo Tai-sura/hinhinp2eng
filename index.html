@@ -17,7 +17,8 @@
     @keyframes pop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
     @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
     @keyframes celebrate { 0% { transform: scale(1) rotate(0); } 50% { transform: scale(1.2) rotate(5deg); } 100% { transform: scale(1) rotate(0); } }
-    .card-scene { perspective: 1200px; width: min(92vw, 380px); height: min(58vw, 280px); }
+    .card-scene { perspective: 1200px; width: min(92vw, 380px); height: min(62vw, 300px); }
+    #fc-visual .vocab-emoji-wrap { border: 3px solid #93c5fd; border-radius: 20px; background: #fff; }
     .flashcard {
       width: 100%; height: 100%; position: relative;
       transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
@@ -50,6 +51,22 @@
     .progress-dot.current { background: #3b82f6; transform: scale(1.4); }
     .star-pop { animation: celebrate 0.5s ease; }
     .shake { animation: shake 0.4s ease; }
+    .vocab-emoji-wrap { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .vocab-emoji-wrap--sm { width: 64px; height: 64px; }
+    .vocab-emoji-wrap--md { width: 96px; height: 96px; }
+    .vocab-emoji-wrap--lg { width: 140px; height: 140px; }
+    .vocab-emoji-wrap--xl { width: 180px; height: 180px; }
+    .vocab-emoji { line-height: 1; display: block; text-align: center; }
+    .vocab-emoji-wrap--sm .vocab-emoji { font-size: 2.75rem; }
+    .vocab-emoji-wrap--md .vocab-emoji { font-size: 4rem; }
+    .vocab-emoji-wrap--lg .vocab-emoji { font-size: 5.5rem; }
+    .vocab-emoji-wrap--xl .vocab-emoji { font-size: 7rem; }
+    .daily-star { width: 40px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; background: #f3f4f6; color: #9ca3af; flex-direction: column; gap: 1px; }
+    .daily-star.filled { background: linear-gradient(145deg, #fde047, #fbbf24); color: #b45309; box-shadow: 0 2px 8px rgba(251,191,36,0.5); }
+    .daily-star.today { ring: 2px; outline: 3px solid #818cf8; outline-offset: 2px; }
+    .sig-canvas { touch-action: none; background: #fff; border: 2px dashed #c4b5fd; border-radius: 12px; cursor: crosshair; }
+    .deck-progress-bar { height: 8px; border-radius: 999px; background: #e5e7eb; overflow: hidden; }
+    .deck-progress-fill { height: 100%; background: linear-gradient(90deg, #60a5fa, #34d399); transition: width 0.4s ease; }
   </style>
 </head>
 <body class="overflow-x-hidden">
@@ -57,10 +74,22 @@
 <!-- HOME -->
 <div id="screen-home" class="screen active flex-col items-center justify-center min-h-dvh p-4 gap-5">
   <div class="text-center">
-    <div class="text-6xl mb-2 animate-bounce">🧭</div>
+    <div class="text-6xl mb-2">📚</div>
     <h1 class="text-3xl md:text-4xl font-bold text-indigo-700 leading-tight">English Vocab Explorer</h1>
-    <p class="text-lg text-indigo-500 mt-1">英語單字探險家 · P2</p>
-    <p class="text-sm text-gray-500 mt-2">Tap a deck, then pick how you want to play!</p>
+    <p class="text-lg text-indigo-500 mt-1">英語單字探險家 · <span id="student-name-display">Tristan</span></p>
+    <p class="text-sm text-gray-500 mt-1">Tap a deck, then pick how you want to play!</p>
+  </div>
+
+  <div class="w-full max-w-md bg-white/80 rounded-2xl p-4 shadow-md border-2 border-amber-100">
+    <div class="flex items-center justify-between mb-2">
+      <p class="font-bold text-amber-800 text-sm"><i class="fa-solid fa-star text-amber-500"></i> 每日打卡 Daily Stars</p>
+      <span id="total-stars-badge" class="text-xs font-bold bg-amber-100 text-amber-800 px-2 py-1 rounded-full">總星 0</span>
+    </div>
+    <div id="daily-stars-row" class="flex justify-between gap-1 mb-2"></div>
+    <p id="daily-hint" class="text-xs text-gray-500 text-center">完成閃卡／拼字／配對可獲星星 · 每日最多 3 顆</p>
+    <button onclick="openProgress()" class="btn-kid w-full mt-3 py-2.5 rounded-xl bg-indigo-100 text-indigo-800 font-bold text-sm">
+      <i class="fa-solid fa-clipboard-check mr-1"></i> 進度與家長簽名 Progress & Parent Sign
+    </button>
   </div>
 
   <div class="w-full max-w-md space-y-3">
@@ -120,9 +149,9 @@
   <p class="text-xs text-gray-500">Tap card to flip · Tap 🔊 to listen</p>
   <div class="card-scene mt-2">
     <div class="flashcard" id="flashcard" onclick="flipCard(event)">
-      <div class="card-face card-front">
-        <span id="fc-icon" class="text-8xl md:text-9xl select-none"></span>
-        <p class="text-gray-400 text-sm mt-3">Tap to see the word</p>
+      <div class="card-face card-front p-3">
+        <div id="fc-visual" class="flex items-center justify-center flex-1 w-full"></div>
+        <p class="text-gray-400 text-sm mt-2">Tap to see the word · 點擊看生字</p>
       </div>
       <div class="card-face card-back px-4">
         <p id="fc-word" class="text-2xl md:text-3xl font-bold text-amber-900 text-center leading-snug"></p>
@@ -147,7 +176,7 @@
     <span id="spell-counter" class="text-sm text-gray-600"></span>
   </div>
   <div class="bg-white rounded-3xl shadow-lg p-6 w-full max-w-md text-center border-4 border-pink-200">
-    <span id="spell-icon" class="text-7xl block mb-2"></span>
+    <div id="spell-visual" class="flex justify-center mb-2 min-h-[100px] items-center"></div>
     <p class="text-gray-500 text-sm mb-2">Spell the word:</p>
     <div id="spell-answer" class="min-h-[52px] flex flex-wrap justify-center gap-1 text-2xl font-bold text-indigo-800 mb-3"></div>
     <div id="spell-letters" class="flex flex-wrap justify-center gap-2"></div>
@@ -169,6 +198,35 @@
   <button id="match-next-btn" onclick="nextMatchRound()" class="btn-kid hidden px-6 py-3 bg-teal-500 text-white rounded-xl font-bold shadow-lg">Next Round ➡️</button>
 </div>
 
+<!-- PROGRESS & PARENT SIGN -->
+<div id="screen-progress" class="screen flex-col items-center min-h-dvh p-4 pt-4 gap-3 overflow-y-auto">
+  <div class="flex items-center justify-between w-full max-w-md">
+    <button onclick="goHome()" class="btn-kid text-indigo-600 font-semibold text-sm"><i class="fa-solid fa-arrow-left"></i> Home</button>
+    <h2 class="text-lg font-bold text-indigo-700">學習進度 Progress</h2>
+    <span class="w-12"></span>
+  </div>
+  <div class="w-full max-w-md bg-white rounded-2xl p-4 shadow border-2 border-indigo-100">
+    <label class="text-sm text-gray-600">學生姓名 Student name</label>
+    <input id="input-student-name" type="text" value="Tristan" class="w-full mt-1 px-3 py-2 rounded-xl border-2 border-indigo-200 font-bold text-indigo-800" onchange="saveStudentName(this.value)">
+  </div>
+  <div id="deck-progress-list" class="w-full max-w-md space-y-3"></div>
+  <div class="w-full max-w-md bg-amber-50 rounded-2xl p-4 border-2 border-amber-200">
+    <p class="font-bold text-amber-900 mb-2"><i class="fa-solid fa-pen-fancy"></i> 家長簽名 Parent's signature</p>
+    <p class="text-xs text-gray-600 mb-2">請家長在下方簽名，確認孩子已完成該單元溫習。</p>
+    <p id="sign-deck-label" class="text-sm font-semibold text-indigo-700 mb-2">選擇單元：請先點選上方單元</p>
+    <canvas id="sig-canvas" class="sig-canvas w-full" width="340" height="120"></canvas>
+    <div class="flex gap-2 mt-2 flex-wrap">
+      <button onclick="clearSignature()" class="btn-kid px-3 py-2 bg-gray-200 rounded-lg text-sm font-bold">清除 Clear</button>
+      <button onclick="saveSignature()" class="btn-kid px-4 py-2 bg-indigo-500 text-white rounded-lg text-sm font-bold">儲存簽名 Save</button>
+    </div>
+    <div id="saved-signature-preview" class="mt-3 hidden">
+      <p class="text-xs text-green-700 font-bold mb-1">已簽名 Signed:</p>
+      <img id="sig-preview-img" alt="signature" class="max-h-16 border border-green-200 rounded bg-white p-1">
+      <p id="sig-preview-date" class="text-xs text-gray-500 mt-1"></p>
+    </div>
+  </div>
+</div>
+
 <!-- CELEBRATION OVERLAY -->
 <div id="overlay-win" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
   <div class="bg-white rounded-3xl p-8 text-center shadow-2xl max-w-sm star-pop">
@@ -180,6 +238,195 @@
 </div>
 
 <script>
+const STORAGE_KEY = 'hinhin-vocab-progress-v2';
+const ACTIVITY_LABELS = { flash: '閃卡', spell: '拼字', match: '配對' };
+
+let progress = loadProgress();
+let signDeckTarget = null;
+let sigDrawing = false;
+let flashSeenSet = new Set();
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return {
+    studentName: 'Tristan',
+    totalStars: 0,
+    daily: {},
+    decks: {
+      occupations1: { studied: {}, activities: {}, parentSign: null, signedAt: null },
+      occupations2: { studied: {}, activities: {}, parentSign: null, signedAt: null },
+      shopping: { studied: {}, activities: {}, parentSign: null, signedAt: null }
+    }
+  };
+}
+function saveProgress() { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
+
+function todayKey() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function ensureDaily() {
+  const k = todayKey();
+  if (!progress.daily[k]) progress.daily[k] = { stars: 0, activities: [] };
+  return progress.daily[k];
+}
+
+function awardDailyStar(activity) {
+  const day = ensureDaily();
+  if (day.activities.includes(activity)) return;
+  day.activities.push(activity);
+  if (day.stars < 3) {
+    day.stars++;
+    progress.totalStars++;
+  }
+  saveProgress();
+  renderDailyStars();
+}
+
+function markWordStudied(deck, word) {
+  if (!deck || !progress.decks[deck]) return;
+  progress.decks[deck].studied[word] = true;
+  saveProgress();
+}
+
+function deckPercent(deck) {
+  const items = vocabData[deck];
+  if (!items?.length) return 0;
+  const n = items.filter(i => progress.decks[deck].studied[i.word]).length;
+  return Math.round((n / items.length) * 100);
+}
+
+function renderVocabVisual(item, size) {
+  size = size || 'lg';
+  const emoji = item.icon || '📖';
+  return '<div class="vocab-emoji-wrap vocab-emoji-wrap--' + size + '">' +
+    '<span class="vocab-emoji">' + emoji + '</span></div>';
+}
+
+function setVisual(el, item, size) {
+  if (typeof el === 'string') el = document.getElementById(el);
+  if (el) el.innerHTML = renderVocabVisual(item, size);
+}
+
+function renderDailyStars() {
+  const row = document.getElementById('daily-stars-row');
+  const badge = document.getElementById('total-stars-badge');
+  const hint = document.getElementById('daily-hint');
+  if (!row) return;
+  const today = todayKey();
+  const day = progress.daily[today] || { stars: 0, activities: [] };
+  const weekdays = ['日','一','二','三','四','五','六'];
+  row.innerHTML = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - i));
+    const k = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    const stars = (progress.daily[k] && progress.daily[k].stars) || 0;
+    const isToday = k === today;
+    return '<div class="daily-star flex-col' + (stars > 0 ? ' filled' : '') + (isToday ? ' today' : '') + '"><span>' + (stars > 0 ? '⭐' : '☆') + '</span>' +
+      '<span class="text-[9px] font-bold">' + (isToday ? '今' : weekdays[d.getDay()]) + '</span></div>';
+  }).join('');
+  if (badge) badge.textContent = '總星 ' + (progress.totalStars || 0);
+  if (hint) hint.textContent = '今日 ' + day.stars + '/3 星 · 已完成：' + (day.activities.length ? day.activities.map(a => ACTIVITY_LABELS[a] || a).join('、') : '尚未開始');
+  const nameEl = document.getElementById('student-name-display');
+  if (nameEl) nameEl.textContent = progress.studentName || 'Tristan';
+}
+
+function openProgress() {
+  document.getElementById('input-student-name').value = progress.studentName || 'Tristan';
+  renderDeckProgressList();
+  showScreen('screen-progress');
+  initSignaturePad();
+}
+
+function renderDeckProgressList() {
+  const list = document.getElementById('deck-progress-list');
+  if (!list) return;
+  const decks = [
+    { id: 'occupations1', label: 'People Who Help Us · L1' },
+    { id: 'occupations2', label: 'More Occupations · L2' },
+    { id: 'shopping', label: 'Shopping with Mom' }
+  ];
+  list.innerHTML = decks.map(d => {
+    const pct = deckPercent(d.id);
+    const signed = progress.decks[d.id].parentSign;
+    return '<div class="bg-white rounded-xl p-3 border-2 border-indigo-100 shadow-sm">' +
+      '<div class="flex justify-between items-center mb-1"><span class="font-bold text-indigo-800 text-sm">' + d.label + '</span>' +
+      '<span class="text-xs font-bold ' + (signed ? 'text-green-600' : 'text-gray-400') + '">' + (signed ? '✅ 已簽名' : pct + '%') + '</span></div>' +
+      '<div class="deck-progress-bar"><div class="deck-progress-fill" style="width:' + pct + '%"></div></div>' +
+      '<div class="flex gap-2 mt-2">' +
+      '<button type="button" class="btn-kid flex-1 py-1.5 text-xs font-bold bg-indigo-100 text-indigo-800 rounded-lg" onclick="selectSignDeck(\'' + d.id + '\')">家長簽名</button>' +
+      '</div></div>';
+  }).join('');
+  updateSignaturePreview();
+}
+
+function selectSignDeck(deckId) {
+  signDeckTarget = deckId;
+  const labels = { occupations1: 'People Who Help Us', occupations2: 'More Occupations', shopping: 'Shopping with Mom' };
+  document.getElementById('sign-deck-label').textContent = '簽名單元：' + (labels[deckId] || deckId) + '（進度 ' + deckPercent(deckId) + '%）';
+  updateSignaturePreview();
+  clearSignature();
+}
+
+function initSignaturePad() {
+  const canvas = document.getElementById('sig-canvas');
+  if (!canvas || canvas._sigReady) return;
+  canvas._sigReady = true;
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#4338ca'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+  const pos = e => {
+    const r = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return { x: (t.clientX - r.left) * (canvas.width / r.width), y: (t.clientY - r.top) * (canvas.height / r.height) };
+  };
+  const start = e => { e.preventDefault(); sigDrawing = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
+  const draw = e => { if (!sigDrawing) return; e.preventDefault(); const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
+  const stop = () => { sigDrawing = false; };
+  canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', draw);
+  canvas.addEventListener('mouseup', stop); canvas.addEventListener('mouseleave', stop);
+  canvas.addEventListener('touchstart', start, { passive: false });
+  canvas.addEventListener('touchmove', draw, { passive: false });
+  canvas.addEventListener('touchend', stop);
+}
+
+function clearSignature() {
+  const canvas = document.getElementById('sig-canvas');
+  if (!canvas) return;
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function saveSignature() {
+  if (!signDeckTarget) { alert('請先點選要簽名的單元'); return; }
+  const canvas = document.getElementById('sig-canvas');
+  progress.decks[signDeckTarget].parentSign = canvas.toDataURL('image/png');
+  progress.decks[signDeckTarget].signedAt = new Date().toISOString();
+  saveProgress();
+  renderDeckProgressList();
+  updateSignaturePreview();
+  alert('簽名已儲存！');
+}
+
+function updateSignaturePreview() {
+  const box = document.getElementById('saved-signature-preview');
+  const img = document.getElementById('sig-preview-img');
+  const dateEl = document.getElementById('sig-preview-date');
+  if (!signDeckTarget || !progress.decks[signDeckTarget].parentSign) {
+    box.classList.add('hidden'); return;
+  }
+  box.classList.remove('hidden');
+  img.src = progress.decks[signDeckTarget].parentSign;
+  dateEl.textContent = '簽名日期：' + new Date(progress.decks[signDeckTarget].signedAt).toLocaleString('zh-HK');
+}
+
+function saveStudentName(v) {
+  progress.studentName = v.trim() || 'Tristan';
+  saveProgress();
+  renderDailyStars();
+}
+
 const vocabData = {
   occupations1: [
     { word: "a teacher", icon: "👩‍🏫" },
@@ -215,7 +462,7 @@ const vocabData = {
     { word: "a painter", icon: "🎨" },
     { word: "a journalist", icon: "📹" },
     { word: "an electrician", icon: "⚡" },
-    { word: "a youtuber", icon: "📱" },
+    { word: "a youtuber", icon: "🎥" },
     { word: "a bank teller", icon: "🏦" },
     { word: "an insurance agent", icon: "📋" },
     { word: "a social worker", icon: "🤝" },
@@ -232,13 +479,13 @@ const vocabData = {
   shopping: [
     { word: "a box of strawberries", icon: "🍓", quantifier: "a box of", food: "strawberries" },
     { word: "a box of chocolates", icon: "🍫", quantifier: "a box of", food: "chocolates" },
-    { word: "a bottle of water", icon: "💧", quantifier: "a bottle of", food: "water" },
+    { word: "a bottle of water", icon: "🚰", quantifier: "a bottle of", food: "water" },
     { word: "a bottle of soft drink", icon: "🥤", quantifier: "a bottle of", food: "soft drink" },
     { word: "a carton of juice", icon: "🧃", quantifier: "a carton of", food: "juice" },
     { word: "a carton of milk", icon: "🥛", quantifier: "a carton of", food: "milk" },
-    { word: "a can of sausages", icon: "🥫", quantifier: "a can of", food: "sausages" },
+    { word: "a can of sausages", icon: "🌭", quantifier: "a can of", food: "sausages" },
     { word: "a can of pineapple slices", icon: "🍍", quantifier: "a can of", food: "pineapple slices" },
-    { word: "a packet of potato chips", icon: "🥔", quantifier: "a packet of", food: "potato chips" },
+    { word: "a packet of potato chips", icon: "🍟", quantifier: "a packet of", food: "potato chips" },
     { word: "a packet of cookies", icon: "🍪", quantifier: "a packet of", food: "cookies" },
     { word: "a bag of apples", icon: "🍎", quantifier: "a bag of", food: "apples" },
     { word: "a bag of popcorn", icon: "🍿", quantifier: "a bag of", food: "popcorn" },
@@ -250,7 +497,6 @@ const vocabData = {
     { word: "a head of cabbage", icon: "🥬", quantifier: "a head of", food: "cabbage" }
   ]
 };
-
 const deckLabels = {
   occupations1: "🧑‍⚕️ People Who Help Us · Level 1",
   occupations2: "🚀 More Occupations · Level 2",
@@ -266,6 +512,7 @@ let spellAnswer = [];
 let matchRound = [];
 let matchMatched = 0;
 let draggedQuantifier = null;
+let draggedElement = null;
 let touchClone = null;
 
 function showScreen(id) {
@@ -275,7 +522,9 @@ function showScreen(id) {
 
 function goHome() {
   currentDeck = null;
+  flashSeenSet = new Set();
   showScreen('screen-home');
+  renderDailyStars();
 }
 
 function selectDeck(deck) {
@@ -308,6 +557,7 @@ function shuffle(arr) {
 function startFlashcards() {
   deckItems = shuffle(getDeckItems());
   cardIndex = 0;
+  flashSeenSet = new Set();
   showScreen('screen-flash');
   renderCard();
 }
@@ -320,8 +570,13 @@ function shuffleDeck() {
 
 function renderCard() {
   const item = deckItems[cardIndex];
-  document.getElementById('fc-icon').textContent = item.icon;
+  setVisual('fc-visual', item, 'xl');
   document.getElementById('fc-word').textContent = item.word;
+  if (currentDeck) {
+    markWordStudied(currentDeck, item.word);
+    flashSeenSet.add(item.word);
+    if (flashSeenSet.size >= deckItems.length) awardDailyStar('flash');
+  }
   document.getElementById('flash-counter').textContent = `${cardIndex + 1} / ${deckItems.length}`;
   document.getElementById('flashcard').classList.remove('flipped');
 
@@ -405,12 +660,14 @@ function spellHintPrefix(item) {
 
 function loadSpellQuestion() {
   if (spellIndex >= deckItems.length) {
+    awardDailyStar('spell');
+    if (currentDeck) deckItems.forEach(i => markWordStudied(currentDeck, i.word));
     showWin(`You scored ${spellScore} / ${deckItems.length}!`, 'Spelling complete!');
     goDeckMenu();
     return;
   }
   const item = deckItems[spellIndex];
-  document.getElementById('spell-icon').textContent = item.icon;
+  setVisual('spell-visual', item, 'md');
   document.getElementById('spell-counter').textContent = `${spellIndex + 1}/${deckItems.length}`;
   document.getElementById('spell-score').textContent = `⭐ ${spellScore}`;
 
@@ -502,10 +759,27 @@ function startMatchFromDeck() {
   startMatchGame();
 }
 
+function pickMatchRound(pool, count = 6) {
+  const shuffled = shuffle([...pool]);
+  const round = [];
+  const usedQuants = new Set();
+  for (const item of shuffled) {
+    if (round.length >= count) break;
+    if (!usedQuants.has(item.quantifier)) {
+      round.push(item);
+      usedQuants.add(item.quantifier);
+    }
+  }
+  for (const item of shuffled) {
+    if (round.length >= count) break;
+    if (!round.some(r => r.word === item.word)) round.push(item);
+  }
+  return round.slice(0, Math.min(count, pool.length));
+}
+
 function startMatchGame() {
   matchMatched = 0;
-  const items = shuffle([...vocabData.shopping]);
-  matchRound = items.slice(0, 6);
+  matchRound = pickMatchRound(vocabData.shopping, 6);
   showScreen('screen-match');
   renderMatchRound();
 }
@@ -514,17 +788,17 @@ function renderMatchRound() {
   document.getElementById('match-score').textContent = `${matchMatched}/${matchRound.length}`;
   document.getElementById('match-next-btn').classList.add('hidden');
 
-  const quants = shuffle([...new Set(matchRound.map(i => i.quantifier))]);
+  const chips = shuffle(matchRound.map((item, i) => ({ q: item.quantifier, id: i })));
   const qEl = document.getElementById('match-quantifiers');
-  qEl.innerHTML = quants.map(q =>
-    `<div class="drag-item px-3 py-2 bg-amber-200 text-amber-900 rounded-xl font-bold text-sm shadow border-2 border-amber-400" draggable="true" data-q="${q}">${q}</div>`
+  qEl.innerHTML = chips.map(c =>
+    `<div class="drag-item px-3 py-2 bg-amber-200 text-amber-900 rounded-xl font-bold text-sm shadow border-2 border-amber-400" draggable="true" data-q="${c.q}" data-chip-id="${c.id}">${c.q}</div>`
   ).join('');
 
   const foods = shuffle(matchRound);
   const fEl = document.getElementById('match-foods');
   fEl.innerHTML = foods.map(item =>
-    `<div class="drop-zone flex flex-col items-center p-3 bg-white rounded-2xl border-3 border-dashed border-gray-300 min-h-[100px] transition-all" data-food="${item.food}" data-q="${item.quantifier}">
-      <span class="text-4xl">${item.icon}</span>
+    `<div class="drop-zone flex flex-col items-center p-3 bg-white rounded-2xl border-3 border-dashed border-gray-300 min-h-[110px] transition-all" data-food="${item.food}" data-q="${item.quantifier}">
+      ${renderVocabVisual(item, 'sm')}
       <span class="font-bold text-gray-700 mt-1 text-center text-sm">${item.food}</span>
     </div>`
   ).join('');
@@ -536,10 +810,14 @@ function setupDragDrop() {
   document.querySelectorAll('.drag-item').forEach(el => {
     el.addEventListener('dragstart', e => {
       draggedQuantifier = el.dataset.q;
+      draggedElement = el;
       e.dataTransfer.setData('text/plain', el.dataset.q);
       el.style.opacity = '0.5';
     });
-    el.addEventListener('dragend', () => { el.style.opacity = '1'; });
+    el.addEventListener('dragend', () => {
+      if (el.isConnected) el.style.opacity = '1';
+      draggedElement = null;
+    });
 
     el.addEventListener('touchstart', handleTouchStart, { passive: false });
   });
@@ -550,7 +828,8 @@ function setupDragDrop() {
     zone.addEventListener('drop', e => {
       e.preventDefault();
       zone.classList.remove('drag-over');
-      tryMatch(zone, e.dataTransfer.getData('text/plain') || draggedQuantifier);
+      tryMatch(zone, e.dataTransfer.getData('text/plain') || draggedQuantifier, draggedElement);
+      draggedElement = null;
     });
   });
 }
@@ -582,7 +861,7 @@ function handleTouchStart(e) {
       z.classList.remove('drag-over');
       const r = z.getBoundingClientRect();
       if (t.clientX >= r.left && t.clientX <= r.right && t.clientY >= r.top && t.clientY <= r.bottom)
-        tryMatch(z, draggedQuantifier);
+        tryMatch(z, draggedQuantifier, el);
     });
     touchClone?.remove();
     touchClone = null;
@@ -594,7 +873,7 @@ function handleTouchStart(e) {
   document.addEventListener('touchend', end);
 }
 
-function tryMatch(zone, quant) {
+function tryMatch(zone, quant, sourceEl) {
   if (zone.classList.contains('correct')) return;
   if (zone.dataset.q === quant) {
     zone.classList.add('correct');
@@ -603,11 +882,16 @@ function tryMatch(zone, quant) {
     document.getElementById('match-score').textContent = `${matchMatched}/${matchRound.length}`;
     speak(`${quant} ${zone.dataset.food}`);
 
-    document.querySelectorAll('.drag-item').forEach(d => {
-      if (d.dataset.q === quant) d.style.visibility = 'hidden';
-    });
+    if (sourceEl && sourceEl.isConnected) {
+      sourceEl.remove();
+    } else {
+      const chip = document.querySelector('.drag-item[data-q="' + CSS.escape(quant) + '"]');
+      chip?.remove();
+    }
 
     if (matchMatched === matchRound.length) {
+      awardDailyStar('match');
+      matchRound.forEach(i => markWordStudied('shopping', i.word));
       document.getElementById('match-next-btn').classList.remove('hidden');
       showWin('All matched!', 'Quantifier Match-up');
     }
@@ -618,13 +902,15 @@ function tryMatch(zone, quant) {
 }
 
 function nextMatchRound() {
-  const remaining = vocabData.shopping.filter(i => !matchRound.includes(i));
+  closeOverlay();
+  const usedWords = new Set(matchRound.map(i => i.word));
+  const remaining = vocabData.shopping.filter(i => !usedWords.has(i.word));
   if (remaining.length < 3) {
     showWin('You finished all shopping words!', 'Match-up Complete');
     goHome();
     return;
   }
-  matchRound = shuffle(remaining).slice(0, 6);
+  matchRound = pickMatchRound(remaining, Math.min(6, remaining.length));
   matchMatched = 0;
   renderMatchRound();
 }
@@ -639,7 +925,12 @@ function showWin(msg, title) {
 function closeOverlay() {
   document.getElementById('overlay-win').classList.add('hidden');
   document.getElementById('overlay-win').classList.remove('flex');
+  renderDailyStars();
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderDailyStars();
+});
 </script>
 </body>
 </html>
